@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
 from .config import TMAX, SA_XMAX, PERIODS
-from .loader import safe_name, get_th, get_idr_th, style_for_strategy, extract_tis
+from .loader import (safe_name, get_th, get_idr_th,
+                     style_for_strategy, extract_tis, CAT_COLOR, fmt_ax)
 from .compute import compute_sa, arias_curve, husid_metrics
 
 
@@ -21,29 +22,14 @@ from .compute import compute_sa, arias_curve, husid_metrics
 # HELPERS
 # ============================================================
 
+_ORDER_MAP = {"RIGIDA": 0, "SLITTE": 1, "ISOLATA": 2, "ALTRO": 9}
+
+
 def _sorted_models(df_r):
-    """
-    Restituisce df_r ordinato: RIGIDA prima, poi SLITTE per Tis crescente,
-    poi ISOLATA per Tis crescente.
-    """
-    order_map = {"RIGIDA": 0, "SLITTE": 1, "ISOLATA": 2, "ALTRO": 9}
+    """Ordina: RIGIDA → SLITTE (Tis crescente) → ISOLATA (Tis crescente)."""
     tmp = df_r.copy()
-    tmp["__ord"] = tmp["Categoria"].map(order_map).fillna(9).astype(int)
+    tmp["__ord"] = tmp["Categoria"].map(_ORDER_MAP).fillna(9).astype(int)
     return tmp.sort_values(["__ord", "Tis", "Modello"]).drop(columns="__ord")
-
-
-def _fmt_ax(ax, xlabel, ylabel, xlim=None, ylim=None, title=None, legend=True):
-    ax.set_xlabel(xlabel, fontsize=11)
-    ax.set_ylabel(ylabel, fontsize=11)
-    if xlim:
-        ax.set_xlim(*xlim)
-    if ylim:
-        ax.set_ylim(*ylim)
-    if title:
-        ax.set_title(title, fontsize=12)
-    ax.grid(True, ls=":", alpha=0.55)
-    if legend:
-        ax.legend(fontsize=8, loc="best", framealpha=0.9, ncol=2)
 
 
 # ============================================================
@@ -118,12 +104,12 @@ def plot_idr_isolamento(nP: int, asse: str,
             ax_t.plot(t, idr, color=st["color"], lw=1.4)
             ax_t.axhline(idr_max, color="red", ls="--", lw=1.1,
                          label=f"IDR_max={idr_max:.4f}")
-            _fmt_ax(ax_t, "Tempo [s]", "IDR [-]", xlim=(0, TMAX))
+            fmt_ax(ax_t, "Tempo [s]", "IDR [-]", xlim=(0, TMAX))
             fig_t.tight_layout()
             figs_th.append((f"IDR_TH_{nP}P_{safe_name(modello)}_{asse}", fig_t))
 
     ax_prof.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-    _fmt_ax(ax_prof, "IDR max [-]", "Interpiano i")
+    fmt_ax(ax_prof, "IDR max [-]", "Interpiano i")
     fig_prof.tight_layout()
 
     return [(f"IDR_PROFILO_{nP}P_{asse}", fig_prof)] + figs_th
@@ -177,7 +163,7 @@ def plot_spettri_piano_iso(nP: int, asse: str, df_r, df_th,
             ax.plot(PERIODS, sa, color=st["color"], lw=st["lw"],
                     alpha=0.9, label=st["label"], zorder=st["zorder"])
 
-        _fmt_ax(ax, "Periodo [s]", "SA [m/s²]",
+        fmt_ax(ax, "Periodo [s]", "SA [m/s²]",
                 xlim=(0, SA_XMAX), ylim=(0, sa_ymax))
         fig.tight_layout()
         figs.append((f"SA_ISO_{nP}P_{safe_name(str(tag))}_{asse}", fig))
@@ -213,8 +199,7 @@ def plot_confronto_pfa_sa(df_risultati: "pd.DataFrame") -> list:
 
     figs = []
 
-    # ----------- palette --------------
-    _cat_color = {"RIGIDA": "black", "SLITTE": "#D55E00", "ISOLATA": "#0072B2", "ALTRO": "gray"}
+    # usa CAT_COLOR centralizzato da loader.py
 
     # ----------- A: bar PFA per piano --------------
     for asse in ("HNE", "HNN", "HNZ"):
@@ -299,7 +284,7 @@ def plot_confronto_pfa_sa(df_risultati: "pd.DataFrame") -> list:
 
         for cat, grp in sub_horiz.groupby("Categoria"):
             ax.scatter(grp["PFA_Max"], grp["SA_Max"],
-                       color=_cat_color.get(cat, "gray"),
+                       color=CAT_COLOR.get(cat, "gray"),
                        alpha=0.75, s=60, label=cat, zorder=3)
 
         ax.set_xlabel("PFA Max [m/s²]", fontsize=11)
@@ -329,8 +314,8 @@ def plot_confronto_pfa_sa(df_risultati: "pd.DataFrame") -> list:
             ):
                 for (cat, tis), grp in sub_a.groupby(["Categoria", "Tis"]):
                     by_piani = grp.groupby("N_Piani")[col].mean().reset_index()
-                    ls  = "--" if cat == "SLITTE" else "-"
-                    col_c = _cat_color.get(cat, "gray")
+                    ls    = "--" if cat == "SLITTE" else "-"
+                    col_c = CAT_COLOR.get(cat, "gray")
                     ax.plot(by_piani["N_Piani"], by_piani[col],
                             marker="o", ls=ls, lw=2.0, color=col_c,
                             label=f"{cat} T={tis:.1f}s", alpha=0.9)

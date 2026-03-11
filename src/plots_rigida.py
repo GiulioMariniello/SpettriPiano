@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 from .config import TMAX, SA_XMAX, PERIODS, G
-from .loader import safe_name, get_th, get_idr_th
+from .loader import safe_name, get_th, get_idr_th, fmt_ax
 from .compute import compute_sa, compute_psd, arias_curve, husid_metrics
 
 # palette cross-piani
@@ -30,19 +30,6 @@ _FLOOR_STYLE = {
 
 def _floor_style(nP: int) -> dict:
     return _FLOOR_STYLE.get(nP, dict(color="gray", ls="-", lw=1.8))
-
-
-def _fmt_ax(ax, xlabel, ylabel, xlim=None, ylim=None, title=None):
-    ax.set_xlabel(xlabel, fontsize=11)
-    ax.set_ylabel(ylabel, fontsize=11)
-    if xlim:
-        ax.set_xlim(*xlim)
-    if ylim:
-        ax.set_ylim(*ylim)
-    if title:
-        ax.set_title(title, fontsize=12)
-    ax.grid(True, ls=":", alpha=0.55)
-    ax.legend(fontsize=9, loc="best", framealpha=0.9)
 
 
 # ============================================================
@@ -76,7 +63,7 @@ def plot_acc_base(colb: dict) -> list:
         ax.plot(t, a, color="steelblue", lw=1.2, label=f"{ax_code}")
         ax.axhline(+pga, color="red", ls="--", lw=1.4, label=f"+PGA = {pga:.3f} m/s²")
         ax.axhline(-pga, color="red", ls="--", lw=1.4)
-        _fmt_ax(ax, "Tempo [s]", "Acc [m/s²]", xlim=(0, TMAX),
+        fmt_ax(ax, "Tempo [s]", "Acc [m/s²]", xlim=(0, TMAX),
                 ylim=(-1.15 * pga, 1.15 * pga) if pga > 0 else None)
         fig.tight_layout()
         figs.append((f"ACC_BASE_{ax_code}", fig))
@@ -146,7 +133,7 @@ def plot_idr_crit(nP: int, df_idr_sum, df_idr_th) -> list:
                 marker="o", color="navy", lw=2.0
             )
             axs[0].axvline(0, color="gray", lw=0.8, ls="--")
-            _fmt_ax(axs[0], "IDR max [-]", "Interpiano i",
+            fmt_ax(axs[0], "IDR max [-]", "Interpiano i",
                     title="Profilo IDR max lungo l'altezza")
             axs[0].yaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
@@ -158,7 +145,7 @@ def plot_idr_crit(nP: int, df_idr_sum, df_idr_th) -> list:
             else:
                 axs[1].text(0.5, 0.5, "Dati IDR(t) non disponibili",
                             ha="center", va="center", transform=axs[1].transAxes)
-            _fmt_ax(axs[1], "Tempo [s]", "IDR [-]",
+            fmt_ax(axs[1], "Tempo [s]", "IDR [-]",
                     xlim=(0, TMAX), title="IDR(t) interpiano critico")
 
             fig.tight_layout()
@@ -218,7 +205,7 @@ def plot_acc_top(nP: int, asse: str, df_r, df_th,
                 continue
             ax.plot(t, a, lw=1.4, label=row["Modello"], alpha=0.85)
 
-        _fmt_ax(ax, "Tempo [s]", "Acc [m/s²]",
+        fmt_ax(ax, "Tempo [s]", "Acc [m/s²]",
                 xlim=(0, TMAX),
                 ylim=(-acc_ymax, acc_ymax))
         fig.tight_layout()
@@ -273,7 +260,7 @@ def plot_spettri_piano(nP: int, asse: str, df_r, df_th,
             sa = compute_sa(t, a, cache, (row["Modello"], str(row["Nodo_ID"]), asse))
             ax.plot(PERIODS, sa, lw=1.8, label=row["Modello"], alpha=0.9)
 
-        _fmt_ax(ax, "Periodo [s]", "SA [m/s²]",
+        fmt_ax(ax, "Periodo [s]", "SA [m/s²]",
                 xlim=(0, SA_XMAX), ylim=(0, sa_ymax),
                 title="Spettro di risposta in accelerazione (ξ=5%)")
         fig.tight_layout()
@@ -348,8 +335,8 @@ def plot_arias(nP: int, asse: str, df_r, df_th,
                           label=f"{row['Modello']} (D5-95={m['D5_95']:.1f}s)",
                           alpha=0.9)
 
-        _fmt_ax(ax_a, "Tempo [s]", "Ia [m/s]",  xlim=(0, TMAX))
-        _fmt_ax(ax_h, "Tempo [s]", "Ia(t)/Ia_tot [-]",
+        fmt_ax(ax_a, "Tempo [s]", "Ia [m/s]",  xlim=(0, TMAX))
+        fmt_ax(ax_h, "Tempo [s]", "Ia(t)/Ia_tot [-]",
                 xlim=(0, TMAX), ylim=(0, 1.05))
         fig_a.tight_layout()
         fig_h.tight_layout()

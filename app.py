@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import src.config as cfg
 from src.loader import (
     read_colb, load_excel, get_th,
-    classify_strategy, extract_tis,
+    classify_strategy, extract_tis, filter_idr_rigida,
 )
 from src.compute import (
     compute_sa, arias_curve, husid_metrics,
@@ -271,13 +271,7 @@ top_tags  = st.session_state["top_tags"]
 # Dataset base fissa
 df_r_rig = df_r[df_r["Categoria"] == "RIGIDA"].copy()
 
-# Idr solo base fissa
-df_idr_sum_rig = df_idr_sum.copy()
-df_idr_th_rig  = df_idr_th.copy()
-for dfi in (df_idr_sum_rig, df_idr_th_rig):
-    if "Tipo_Base" in dfi.columns:
-        mask = dfi["Tipo_Base"].astype(str).str.upper().str.contains("RIG", na=False)
-        dfi.drop(dfi[~mask].index, inplace=True)
+df_idr_sum_rig, df_idr_th_rig = filter_idr_rigida(df_idr_sum, df_idr_th)
 
 # ============================================================
 # TABS PRINCIPALI

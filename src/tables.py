@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from .config import IDR_SLO_FRAGILI, IDR_SLO_DEFORMABILI, TMAX
-from .loader import get_th, classify_strategy, extract_tis
+from .loader import get_th, classify_strategy, extract_tis, format_strategia
 from .compute import compute_sa, arias_curve, husid_metrics, PERIODS
 
 
@@ -162,15 +162,7 @@ def compute_reductions(df_res: pd.DataFrame) -> pd.DataFrame:
                 rid_sa  = ((ref_sa - float(row["SA_Max"])) / ref_sa * 100.0
                            if (not np.isnan(ref_sa) and ref_sa > 0) else np.nan)
 
-            tis_label = f"{row['Tis']:.1f}s" if not np.isnan(row["Tis"]) else ""
-            if row["Categoria"] == "RIGIDA":
-                strategia = "Base Fissa"
-            elif row["Categoria"] == "SLITTE":
-                strategia = f"Slitte T={tis_label}"
-            elif row["Categoria"] == "ISOLATA":
-                strategia = f"Isolato T={tis_label}"
-            else:
-                strategia = row["Modello"]
+            strategia = format_strategia(row["Categoria"], float(row["Tis"]))
 
             records.append({
                 "N_Piani":       int(nP),

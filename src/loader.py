@@ -58,15 +58,64 @@ def classify_strategy(tipo_base: str, modello: str) -> str:
     return "ALTRO"
 
 
+# Colore per categoria – usato sia per stili plot che per scatter/bar chart
+CAT_COLOR = {"RIGIDA": "black", "SLITTE": "#D55E00", "ISOLATA": "#0072B2", "ALTRO": "gray"}
+
+
 def style_for_strategy(cat: str, tis: float) -> dict:
     """Restituisce stile matplotlib in base alla categoria."""
+    color = CAT_COLOR.get(cat, "gray")
     if cat == "RIGIDA":
-        return dict(color="black",   lw=2.8, zorder=10, label="Base Fissa")
+        return dict(color=color, lw=2.8, zorder=10, label="Base Fissa")
     if cat == "SLITTE":
-        return dict(color="#D55E00", lw=1.8, zorder=5,  label=f"Slitte T={tis:.1f}s")
+        return dict(color=color, lw=1.8, zorder=5,  label=f"Slitte T={tis:.1f}s")
     if cat == "ISOLATA":
-        return dict(color="#0072B2", lw=1.8, zorder=5,  label=f"Isolato T={tis:.1f}s")
-    return dict(color="gray", lw=1.2, zorder=1, label="Altro")
+        return dict(color=color, lw=1.8, zorder=5,  label=f"Isolato T={tis:.1f}s")
+    return dict(color=color, lw=1.2, zorder=1, label="Altro")
+
+
+def format_strategia(categoria: str, tis: float) -> str:
+    """Etichetta leggibile della strategia (usata in tabelle e plot)."""
+    tis_s = f"T={tis:.1f}s" if not (tis != tis) else ""   # NaN-safe
+    if categoria == "RIGIDA":
+        return "Base Fissa"
+    if categoria == "SLITTE":
+        return f"Slitte {tis_s}"
+    if categoria == "ISOLATA":
+        return f"Isolato {tis_s}"
+    return categoria
+
+
+def filter_idr_rigida(df_idr_sum: pd.DataFrame,
+                       df_idr_th:  pd.DataFrame) -> tuple:
+    """
+    Filtra i DataFrame IDR tenendo solo i record base fissa (RIGIDA).
+    Ritorna nuove copie filtrate senza modificare gli originali.
+    """
+    def _filt(df):
+        if df.empty or "Tipo_Base" not in df.columns:
+            return df.copy()
+        mask = df["Tipo_Base"].astype(str).str.upper().str.contains("RIG", na=False)
+        return df.loc[mask].copy()
+
+    return _filt(df_idr_sum), _filt(df_idr_th)
+
+
+def fmt_ax(ax, xlabel: str, ylabel: str,
+           xlim=None, ylim=None, title: str = None,
+           legend: bool = True) -> None:
+    """Formattazione assi matplotlib condivisa tra tutti i moduli plot."""
+    ax.set_xlabel(xlabel, fontsize=11)
+    ax.set_ylabel(ylabel, fontsize=11)
+    if xlim:
+        ax.set_xlim(*xlim)
+    if ylim:
+        ax.set_ylim(*ylim)
+    if title:
+        ax.set_title(title, fontsize=12)
+    ax.grid(True, ls=":", alpha=0.55)
+    if legend:
+        ax.legend(fontsize=9, loc="best", framealpha=0.9)
 
 
 # ============================================================
@@ -108,7 +157,8 @@ def read_colb(path: str, dt: float = INPUT_DT) -> dict:
 # EXCEL MASTER
 # ============================================================
 
-_REQUIRED_SHEETS = {"Riepilogo", "TimeHistory", "IDR_Riepilogo", "IDR_TimeHistory"}
+_REQUIRED_SHEETS  = {"Riepilogo", "TimeHistory"}
+_OPTIONAL_SHEETS  = {"IDR_Riepilogo", "IDR_TimeHistory"}
 
 
 def load_excel(path: str) -> tuple:
@@ -139,8 +189,10 @@ def load_excel(path: str) -> tuple:
 
     df_r       = pd.read_excel(xls, sheet_name="Riepilogo")
     df_th      = pd.read_excel(xls, sheet_name="TimeHistory")
-    df_idr_sum = pd.read_excel(xls, sheet_name="IDR_Riepilogo")
-    df_idr_th  = pd.read_excel(xls, sheet_name="IDR_TimeHistory")
+    df_idr_sum = (pd.read_excel(xls, sheet_name="IDR_Riepilogo")
+                  if "IDR_Riepilogo"   in xls.sheet_names else pd.DataFrame())
+    df_idr_th  = (pd.read_excel(xls, sheet_name="IDR_TimeHistory")
+                  if "IDR_TimeHistory" in xls.sheet_names else pd.DataFrame())
 
     # strip spazi
     df_r       = _strip_cols(df_r,       ["Modello", "Asse", "Tipo_Base", "Nodo_Tag", "Nodo_ID"])

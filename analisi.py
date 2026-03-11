@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.dirname(__file__))
 
 from src import config as cfg
-from src.loader import read_colb, load_excel, get_th
+from src.loader import read_colb, load_excel, get_th, filter_idr_rigida
 from src.compute import (
     compute_sa, arias_curve, husid_metrics,
     global_sa_ymax, global_acc_ymax,
@@ -90,14 +90,7 @@ def run_rigida(df_r, df_th, df_idr_sum, df_idr_th,
         print("⚠️  Nessun modello RIGIDA trovato nel dataset.")
         return
 
-    df_idr_sum_rig = df_idr_sum.copy()
-    df_idr_th_rig  = df_idr_th.copy()
-
-    # filtra Tipo_Base RIGIDA se presente
-    for dfi in (df_idr_sum_rig, df_idr_th_rig):
-        if "Tipo_Base" in dfi.columns:
-            mask = dfi["Tipo_Base"].astype(str).str.upper().str.contains("RIG", na=False)
-            dfi.drop(dfi[~mask].index, inplace=True)
+    df_idr_sum_rig, df_idr_th_rig = filter_idr_rigida(df_idr_sum, df_idr_th)
 
     # limiti globali per scale uniformi
     print("  Calcolo limiti globali per scale uniformi…")
