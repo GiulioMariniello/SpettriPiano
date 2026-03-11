@@ -1,0 +1,7 @@
+numpy
+pandas
+matplotlib
+scipy
+openpyxl
+pyrotd
+streamlit>=1.32.0
